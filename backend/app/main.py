@@ -203,7 +203,15 @@ async def index(request: Request):
 
 @app.get("/healthz")
 async def healthz():
-    return {"ok": True, "gateway": GW.name if GW else "none", "connection": HUB.status}
+    return {
+        "ok": True,
+        "gateway": GW.name if GW else "none",
+        "connection": HUB.status,
+        # Enough to diagnose a sign-in that is being refused, with no secrets.
+        "cookieSecure": CFG.cookie_secure,
+        "allowedOrigins": list(CFG.allowed_origins),
+        "listen": f"{CFG.host}:{CFG.port}",
+    }
 
 
 # ---------------------------------------------------------------------- rpc

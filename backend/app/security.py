@@ -156,9 +156,17 @@ def origin_ok(request: Request) -> bool:
     if not origin:
         return True  # same-origin GET/img requests often omit it
     if CFG.allowed_origins:
-        return origin in CFG.allowed_origins
-    host = request.headers.get("host", "")
-    return origin.split("//")[-1] == host
+        if origin in CFG.allowed_origins:
+            return True
+        log.warning(
+            "origin %r rejected: not in ALLOWED_ORIGINS %r", origin, list(CFG.allowed_origins)
+        )
+        return False
+    host = (request.headers.get("x-forwarded-host") or request.headers.get("host") or "").rstrip("/")
+    if origin.split("//")[-1] == host:
+        return True
+    log.warning("origin %r rejected: does not match Host %r", origin, host)
+    return False
 
 
 # --- endpoint rate limiting ------------------------------------------------
