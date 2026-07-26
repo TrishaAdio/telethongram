@@ -249,6 +249,22 @@ PY
 check "every failed attempt is recorded for the throttle" "true" \
   "$([[ ${ATTEMPTS:-0} -ge 3 ]] && echo true || echo false)"
 
+echo "== config self-check"
+check "a transport warning is never a startup blocker" "true" \
+  "$(HOST=0.0.0.0 COOKIE_SECURE=false GATEWAY=telethon TG_API_ID=1 TG_API_HASH=x \
+     .venv/bin/python -c '
+import sys; sys.path.insert(0, ".")
+from backend.app.config import Config
+c = Config()
+print(str(any("COOKIE_SECURE" in a for a in c.advisories())
+          and not any("COOKIE_SECURE" in b for b in c.blockers())).lower())')"
+check "a missing session is a blocker" "true" \
+  "$(GATEWAY=telethon TG_API_ID=1 TG_API_HASH=x DATA_DIR=/nonexistent-xyz \
+     .venv/bin/python -c '
+import sys; sys.path.insert(0, ".")
+from backend.app.config import Config
+print(str(any("session" in b for b in Config().blockers())).lower())')"
+
 echo "== logs"
 check "no secret ever reached the log" "" "$(grep -o "$SECRET_KEY" "$LOG")"
 check "no passphrase reached the log" "" "$(grep -o 'correct-horse-battery' "$LOG")"

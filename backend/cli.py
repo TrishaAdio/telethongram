@@ -79,17 +79,19 @@ async def _login() -> int:
 
 
 def cmd_check() -> int:
-    problems = CFG.problems()
+    blockers, advisories = CFG.blockers(), CFG.advisories()
     print(f"gateway={CFG.gateway} port={CFG.port} data_dir={CFG.data_dir}")
     print(f"frontend={CFG.frontend_dir}")
     print(f"cookie_secure={CFG.cookie_secure} mirror_dialog_state={CFG.mirror_dialog_state}")
     print(f"delete_command_messages={CFG.delete_command_messages} "
           f"destructive_clear_history={CFG.destructive_clear_history}")
-    if not problems:
-        print("config: OK")
+    for p in advisories:
+        print(f"warning: {p}")
+    if not blockers:
+        print("config: OK" + (" (with warnings)" if advisories else ""))
         return 0
-    for p in problems:
-        print(f"config: {p}")
+    for p in blockers:
+        print(f"blocked: {p}")
     return 1
 
 

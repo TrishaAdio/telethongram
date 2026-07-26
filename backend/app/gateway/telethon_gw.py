@@ -49,9 +49,11 @@ class TelethonGateway(Gateway):
 
     # ------------------------------------------------------------------ boot
     async def start(self) -> None:
-        problems = CFG.problems()
-        if problems:
-            raise RuntimeError("; ".join(problems))
+        # Only blockers stop us here. An advisory about transport security is not
+        # a reason to refuse to connect to Telegram.
+        blockers = CFG.blockers()
+        if blockers:
+            raise RuntimeError("; ".join(blockers))
         session_string = unseal(CFG.session_path.read_bytes())
         self.client = TelegramClient(
             StringSession(session_string),

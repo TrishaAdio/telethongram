@@ -77,7 +77,9 @@ async def _startup() -> None:
         log.error("gateway failed to start: %s", e)
         HUB.set_status("offline")
     app.state.sweeper = asyncio.create_task(media.sweeper_task())
-    for p in CFG.problems():
+    for p in CFG.blockers():
+        log.error("config: %s", p)
+    for p in CFG.advisories():
         log.warning("config: %s", p)
 
 

@@ -105,8 +105,8 @@ class Config:
             except PermissionError:
                 pass
 
-    def problems(self) -> list[str]:
-        """Startup self-check. Returns human-readable blockers."""
+    def blockers(self) -> list[str]:
+        """Things that make the bridge unable to work at all."""
         out = []
         # systemd's EnvironmentFile keeps everything after the "=", including a
         # trailing "# comment". Catch that before it silently changes behaviour.
@@ -137,6 +137,11 @@ class Config:
             out.append(
                 f"No Telegram session at {self.session_path} (run: python -m backend.cli login)."
             )
+        return out
+
+    def advisories(self) -> list[str]:
+        """Things worth saying out loud that must never stop the bridge."""
+        out = []
         if not self.cookie_secure and self.host not in ("127.0.0.1", "::1", "localhost"):
             out.append(
                 "COOKIE_SECURE=false while listening on a public interface: the login cookie "
@@ -150,6 +155,10 @@ class Config:
                 "whatever Host the request arrives with."
             )
         return out
+
+    def problems(self) -> list[str]:
+        """Everything, for the CLI self-check."""
+        return self.blockers() + self.advisories()
 
 
 CFG = Config()
