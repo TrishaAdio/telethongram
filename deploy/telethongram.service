@@ -1,0 +1,40 @@
+[Unit]
+Description=Telethongram bridge (HTTP + WebSocket + MTProto)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=telethongram
+Group=telethongram
+WorkingDirectory=/opt/telethongram
+EnvironmentFile=/etc/telethongram/env
+ExecStart=/opt/telethongram/.venv/bin/uvicorn backend.app.main:app \
+    --host 127.0.0.1 --port 4000 --workers 1 --proxy-headers --no-server-header
+Restart=always
+RestartSec=3
+
+# The process holds a session that controls a real Telegram account.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+ReadWritePaths=/var/lib/telethongram
+UMask=0077
+MemoryMax=1G
+
+[Install]
+WantedBy=multi-user.target
