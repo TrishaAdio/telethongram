@@ -108,6 +108,18 @@ class Config:
     def problems(self) -> list[str]:
         """Startup self-check. Returns human-readable blockers."""
         out = []
+        # systemd's EnvironmentFile keeps everything after the "=", including a
+        # trailing "# comment". Catch that before it silently changes behaviour.
+        for name in ("GATEWAY", "TG_API_HASH", "HOST", "DATA_DIR", "FRONTEND_DIR",
+                     "ALLOWED_ORIGINS", "COMMAND_PREFIX"):
+            raw = os.environ.get(name, "")
+            if "#" in raw:
+                out.append(
+                    f"{name} contains a '#' — an inline comment was read as part of the "
+                    f"value. Put comments on their own line in the env file."
+                )
+        if self.gateway not in ("fake", "telethon"):
+            out.append(f"GATEWAY is '{self.gateway}'; expected 'telethon' or 'fake'.")
         if not self.secret_key or len(self.secret_key) < 32:
             out.append("SECRET_KEY is missing or shorter than 32 characters.")
         if not self.password_hash.startswith("$argon2"):
@@ -117,6 +129,12 @@ class Config:
         if self.gateway == "telethon" and not self.session_path.exists():
             out.append(
                 f"No Telegram session at {self.session_path} (run: python -m backend.cli login)."
+            )
+        if any("example.com" in o for o in self.allowed_origins):
+            out.append(
+                "ALLOWED_ORIGINS still points at example.com — every request from your real "
+                "domain will be rejected. Set it to your own URL, or leave it empty to accept "
+                "whatever Host the request arrives with."
             )
         return out
 
