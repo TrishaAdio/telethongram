@@ -144,6 +144,19 @@ Each of these is a single env flag away from the opposite behaviour.
   hashes, tokens and long base64 blobs as a backstop; message bodies are never
   logged at all.
 
+## The CSP compromise, stated plainly
+
+`support.js` fetches React, ReactDOM and **Babel standalone** from `unpkg.com` at
+runtime and compiles the page's inline script with `new Function`. So the policy
+has to include `'unsafe-eval'` and that third-party origin, or the app renders a
+blank page. Both are real weaknesses on a page displaying private messages: a
+compromised unpkg response would execute in our origin with the session cookie.
+
+Fixing it properly means vendoring those three files and pointing `support.js` at
+local copies — a one-line change to a file the brief says not to touch, so it is
+your call. `'unsafe-eval'` cannot be removed at all while the page is compiled in
+the browser at load time.
+
 ## Verify locally
 
 ```bash

@@ -44,13 +44,17 @@ SECURITY_HEADERS = {
     "Referrer-Policy": "same-origin",
     "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
     "Cross-Origin-Opener-Policy": "same-origin",
-    # The page we may not edit pulls icons from unpkg and fonts from Google.
+    # This policy is as tight as the frontend allows, and no tighter.
+    # support.js loads React, ReactDOM and Babel standalone from unpkg at runtime
+    # and compiles the page's <script data-dc-script> with new Function, so
+    # 'unsafe-eval' and that origin are both required. Removing either one blanks
+    # the page. See the CSP note in the README for what that costs.
     "Content-Security-Policy": (
         "default-src 'self'; "
         "img-src 'self' data: blob:; "
         "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
-        "script-src 'self' 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; "
         "connect-src 'self' ws: wss:; "
         "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
     ),

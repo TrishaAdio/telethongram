@@ -46,6 +46,14 @@ check "rpc without a cookie is 401 with a human error" "session expired" \
 check "frontend assets are gated too" "/login" \
   "$(curl -s -o /dev/null -w '%{redirect_url}' $B/support.js)"
 check "a CSP is sent" "content-security-policy" "$(curl -s -D - -o /dev/null $B/login | tr 'A-Z' 'a-z')"
+# support.js fetches React/Babel from unpkg and compiles the page with
+# new Function. If the CSP stops allowing either, the app renders blank.
+check "the CSP permits what support.js actually needs" "true" \
+  "$(curl -s -D - -o /dev/null $B/login | grep -i content-security-policy | \
+     .venv/bin/python -c '
+import sys
+csp = sys.stdin.read()
+print(str(all(t in csp for t in ("unsafe-eval", "https://unpkg.com"))).lower())')"
 check "clickjacking is blocked" "x-frame-options: deny" "$(curl -s -D - -o /dev/null $B/login | tr 'A-Z' 'a-z')"
 
 echo "== sign in"
