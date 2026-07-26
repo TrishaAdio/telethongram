@@ -272,10 +272,7 @@ class TelethonGateway(Gateway):
             "draft": draft_row["text"] if draft_row else "",
         }
 
-        last = getattr(dialog, "message", None)
-        if last is not None and not await self._is_filtered(tg_id, int(last.id)):
-            if int(getattr(last, "date", None).timestamp() * 1000) >= int(row["hide_before"]):
-                chat["lastMessage"] = await self._message_shape(last, cid)
+        chat["lastMessage"] = await self._last_message(cid, tg_id, dialog, row, entity)
 
         if kind == "private":
             chat["userId"] = ids.user_cid(tg_id, self.me_id)
@@ -293,6 +290,47 @@ class TelethonGateway(Gateway):
             if full:
                 await self._augment_full(chat, entity, kind)
         return chat
+
+    async def _last_message(self, cid: str, tg_id: int, dialog: Any, row, entity: Any) -> Optional[dict]:
+        """The denormalised chat-list preview.
+
+        A dialog does not always carry a message - Saved Messages and freshly
+        enabled chats often do not - and a filtered `.addweb` must never become
+        the preview either. So fall back to asking for recent history and take the
+        newest message that is allowed to be shown.
+        """
+        hide_before = int(row["hide_before"])
+
+        async def usable(msg: Any) -> bool:
+            if msg is None or isinstance(msg, types.MessageEmpty):
+                return False
+            if self._cmd.match((getattr(msg, "message", "") or "").strip()):
+                return False
+            if await self._is_filtered(tg_id, int(msg.id)):
+                return False
+            date = getattr(msg, "date", None)
+            return date is not None and int(date.timestamp() * 1000) >= hide_before
+
+        candidate = getattr(dialog, "message", None)
+        if await usable(candidate):
+            return await self._message_shape(candidate, cid)
+
+        if entity is None:
+            return None
+        try:
+            recent = await self._call(
+                lambda: self.client.get_messages(entity, limit=5),
+                lane="low", label="last_message",
+            )
+        except UserFacing:
+            return None
+        except Exception:
+            log.debug("could not read a preview message for %s", cid, exc_info=True)
+            return None
+        for msg in recent or []:
+            if await usable(msg):
+                return await self._message_shape(msg, cid)
+        return None
 
     @staticmethod
     def _is_muted(dialog: Any) -> bool:

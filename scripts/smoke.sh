@@ -46,6 +46,11 @@ check "rpc without a cookie is 401 with a human error" "session expired" \
 check "frontend assets are gated too" "/login" \
   "$(curl -s -o /dev/null -w '%{redirect_url}' $B/support.js)"
 check "a CSP is sent" "content-security-policy" "$(curl -s -D - -o /dev/null $B/login | tr 'A-Z' 'a-z')"
+check "the CSP allows the icon font origin" "true" "$(curl -s -D - -o /dev/null $B/login | grep -i content-security-policy | .venv/bin/python -c '
+import re,sys
+csp=sys.stdin.read()
+font=re.search(r"font-src([^;]*)",csp)
+print(str(bool(font and "unpkg.com" in font.group(1))).lower())')"
 # support.js fetches React/Babel from unpkg and compiles the page with
 # new Function. If the CSP stops allowing either, the app renders blank.
 check "the CSP permits what support.js actually needs" "true" \

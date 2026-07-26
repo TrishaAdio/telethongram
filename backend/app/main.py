@@ -53,7 +53,8 @@ SECURITY_HEADERS = {
         "default-src 'self'; "
         "img-src 'self' data: blob:; "
         "style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com data:; "
+        # Phosphor ships its woff2 files from unpkg, not just the stylesheet.
+        "font-src 'self' https://unpkg.com https://fonts.gstatic.com data:; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; "
         "connect-src 'self' ws: wss:; "
         "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
