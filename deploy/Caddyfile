@@ -1,0 +1,28 @@
+# TLS terminates here; the bridge itself only ever listens on 127.0.0.1:4000.
+# HTTPS is not optional: the session cookie and every message body cross this hop.
+
+telethongram.example.com {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	# Websocket and everything else go to the same origin.
+	reverse_proxy 127.0.0.1:4000 {
+		header_up X-Forwarded-For {remote_host}
+	}
+
+	log {
+		output file /var/log/caddy/telethongram.log
+		format json
+		# Query strings carry media signatures; drop them from the log.
+		# (Caddy logs the URI; keep this log short-lived and 0640.)
+	}
+}
+
+# If you must expose port 4000 directly instead of proxying, terminate TLS on it:
+# https://telethongram.example.com:4000 {
+#     reverse_proxy 127.0.0.1:4001
+# }
