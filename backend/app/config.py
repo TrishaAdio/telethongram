@@ -123,7 +123,14 @@ class Config:
         if not self.secret_key or len(self.secret_key) < 32:
             out.append("SECRET_KEY is missing or shorter than 32 characters.")
         if not self.password_hash.startswith("$argon2"):
-            out.append("WEB_PASSWORD_HASH is missing (run: python -m backend.cli hash).")
+            if self.password_hash:
+                out.append(
+                    "WEB_PASSWORD_HASH does not look like an argon2 hash. If you sourced the "
+                    "env file in a shell, bash expanded the '$' segments away — wrap the value "
+                    "in single quotes in /etc/telethongram/env."
+                )
+            else:
+                out.append("WEB_PASSWORD_HASH is missing (run: python -m backend.cli hash).")
         if self.gateway == "telethon" and not (self.api_id and self.api_hash):
             out.append("TG_API_ID / TG_API_HASH are required when GATEWAY=telethon.")
         if self.gateway == "telethon" and not self.session_path.exists():
