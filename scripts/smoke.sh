@@ -74,6 +74,17 @@ check "rpc without the csrf header is refused" "out of date" \
 check "a foreign Origin is refused" "did not come from this site" \
   "$(curl -s -b "$JAR" -X POST $B/api/rpc -H 'content-type: application/json' \
      -H "X-CSRF-Token: $CSRF" -H 'Origin: https://evil.example' -d '{"method":"getChats","args":[]}')"
+check "a null Origin from a cross-site post is refused" "did not come from this site" \
+  "$(curl -s -b "$JAR" -X POST $B/api/rpc -H 'content-type: application/json' \
+     -H "X-CSRF-Token: $CSRF" -H 'Origin: null' -H 'Sec-Fetch-Site: cross-site' \
+     -d '{"method":"getChats","args":[]}')"
+check "a null Origin from a same-origin form post is allowed" '"ok": true' \
+  "$(curl -s -b "$JAR" -X POST $B/api/rpc -H 'content-type: application/json' \
+     -H "X-CSRF-Token: $CSRF" -H 'Origin: null' -H 'Sec-Fetch-Site: same-origin' \
+     -d '{"method":"getChats","args":[]}' | pp | head -2)"
+check "signing in with a null Origin works" "302" \
+  "$(curl -s -o /dev/null -w '%{http_code}' -c /dev/null -X POST $B/login \
+     -H 'Origin: null' -H 'Sec-Fetch-Site: same-origin' -d 'passphrase=correct-horse-battery')"
 
 echo "== reads"
 CHATS=$(rpc getChats '[]')

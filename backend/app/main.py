@@ -39,7 +39,9 @@ NO_SESSION_ERROR = "Your Telethongram session expired. Reload the page to sign i
 SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "Referrer-Policy": "no-referrer",
+    # Not no-referrer: that makes browsers send `Origin: null` on form posts,
+    # which the CSRF check cannot distinguish from a genuine cross-site request.
+    "Referrer-Policy": "same-origin",
     "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
     "Cross-Origin-Opener-Policy": "same-origin",
     # The page we may not edit pulls icons from unpkg and fonts from Google.

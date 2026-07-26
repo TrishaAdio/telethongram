@@ -153,8 +153,18 @@ async def destroy_session(request: Request) -> None:
 def origin_ok(request: Request) -> bool:
     """Mandatory for WS (SameSite does not protect it) and cheap for POSTs."""
     origin = (request.headers.get("origin") or "").rstrip("/")
-    if not origin:
-        return True  # same-origin GET/img requests often omit it
+    fetch_site = request.headers.get("sec-fetch-site")
+
+    # Browsers send `Origin: null` for form posts when the referrer policy strips
+    # the origin, so a null origin is not evidence of anything on its own.
+    # Sec-Fetch-Site is the reliable signal where it exists.
+    if origin in ("", "null"):
+        if fetch_site in (None, "same-origin", "none"):
+            return True
+        log.warning("request with %r origin rejected: Sec-Fetch-Site=%r", origin, fetch_site)
+        return False
+    if fetch_site == "same-origin":
+        return True
     if CFG.allowed_origins:
         if origin in CFG.allowed_origins:
             return True
