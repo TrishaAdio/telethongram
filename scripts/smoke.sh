@@ -10,6 +10,7 @@ ROOT=$(pwd)
 DATA=$ROOT/.local/data
 LOG=$ROOT/.local/bridge.log
 JAR=$ROOT/.local/cookies
+mkdir -p "$ROOT/.local"
 rm -rf "$DATA" "$JAR" "$LOG"
 
 export SECRET_KEY=$(.venv/bin/python -c "import secrets;print(secrets.token_urlsafe(48))")
