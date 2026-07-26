@@ -69,6 +69,34 @@ The bridge listens on `127.0.0.1:4000` and Caddy terminates TLS in front of it.
 HTTPS is not optional: the session cookie and every message body cross that hop,
 and the cookie is set `Secure`, so plain HTTP will not authenticate at all.
 
+### No domain name?
+
+Pick one of these rather than serving plain HTTP over an IP.
+
+**A free hostname, so you get a real certificate.** Register any subdomain
+(DuckDNS and similar are free), point it at the VPS, and use `deploy/Caddyfile`
+unchanged. Port 80 must be reachable for the ACME challenge. This is the only
+option with no browser warning.
+
+**An SSH tunnel — nothing is exposed at all.** Leave `HOST=127.0.0.1`,
+`PORT=4000`, set `COOKIE_SECURE=false` and `ALLOWED_ORIGINS=` (empty), then from
+your laptop:
+
+```bash
+ssh -N -L 4000:127.0.0.1:4000 you@your-vps
+```
+
+Open `http://localhost:4000`. The traffic is inside SSH, and the bridge is not
+listening on any public interface.
+
+**HTTPS on the IP with a self-signed certificate.** Use `deploy/Caddyfile.ip`,
+set `PORT=4001` so Caddy can own 4000, and `ALLOWED_ORIGINS=https://YOUR.IP:4000`.
+One browser warning to accept; encryption and `Secure` cookies both keep working.
+
+Plain `http://IP:4000` requires `COOKIE_SECURE=false`, which means your login
+cookie and every message you read travel unencrypted. Only do it on a network you
+control, and never leave it running that way.
+
 ## Decisions baked in
 
 Each of these is a single env flag away from the opposite behaviour.

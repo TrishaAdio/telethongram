@@ -9,8 +9,10 @@ User=telethongram
 Group=telethongram
 WorkingDirectory=/opt/telethongram
 EnvironmentFile=/etc/telethongram/env
+; HOST and PORT come from the env file. Keep HOST=127.0.0.1 whenever anything
+; terminates TLS in front of this process.
 ExecStart=/opt/telethongram/.venv/bin/uvicorn backend.app.main:app \
-    --host 127.0.0.1 --port 4000 --workers 1 --proxy-headers --no-server-header
+    --host ${HOST} --port ${PORT} --workers 1 --proxy-headers --no-server-header
 Restart=always
 RestartSec=3
 

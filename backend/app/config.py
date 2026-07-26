@@ -108,15 +108,46 @@ class Config:
     def problems(self) -> list[str]:
         """Startup self-check. Returns human-readable blockers."""
         out = []
+        # systemd's EnvironmentFile keeps everything after the "=", including a
+        # trailing "# comment". Catch that before it silently changes behaviour.
+        for name in ("GATEWAY", "TG_API_HASH", "HOST", "DATA_DIR", "FRONTEND_DIR",
+                     "ALLOWED_ORIGINS", "COMMAND_PREFIX"):
+            raw = os.environ.get(name, "")
+            if "#" in raw:
+                out.append(
+                    f"{name} contains a '#' — an inline comment was read as part of the "
+                    f"value. Put comments on their own line in the env file."
+                )
+        if self.gateway not in ("fake", "telethon"):
+            out.append(f"GATEWAY is '{self.gateway}'; expected 'telethon' or 'fake'.")
         if not self.secret_key or len(self.secret_key) < 32:
             out.append("SECRET_KEY is missing or shorter than 32 characters.")
         if not self.password_hash.startswith("$argon2"):
-            out.append("WEB_PASSWORD_HASH is missing (run: python -m backend.cli hash).")
+            if self.password_hash:
+                out.append(
+                    "WEB_PASSWORD_HASH does not look like an argon2 hash. If you sourced the "
+                    "env file in a shell, bash expanded the '$' segments away — wrap the value "
+                    "in single quotes in /etc/telethongram/env."
+                )
+            else:
+                out.append("WEB_PASSWORD_HASH is missing (run: python -m backend.cli hash).")
         if self.gateway == "telethon" and not (self.api_id and self.api_hash):
             out.append("TG_API_ID / TG_API_HASH are required when GATEWAY=telethon.")
         if self.gateway == "telethon" and not self.session_path.exists():
             out.append(
                 f"No Telegram session at {self.session_path} (run: python -m backend.cli login)."
+            )
+        if not self.cookie_secure and self.host not in ("127.0.0.1", "::1", "localhost"):
+            out.append(
+                "COOKIE_SECURE=false while listening on a public interface: the login cookie "
+                "and every message will cross the network unencrypted. Put TLS in front, or "
+                "tunnel over SSH and keep HOST=127.0.0.1."
+            )
+        if any("example.com" in o for o in self.allowed_origins):
+            out.append(
+                "ALLOWED_ORIGINS still points at example.com — every request from your real "
+                "domain will be rejected. Set it to your own URL, or leave it empty to accept "
+                "whatever Host the request arrives with."
             )
         return out
 
