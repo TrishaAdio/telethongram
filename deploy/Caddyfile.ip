@@ -1,0 +1,20 @@
+# No domain: serve HTTPS on the IP directly with Caddy's own internal CA.
+#
+# The browser will warn once about the certificate because nothing publicly
+# trusts that CA. Accept it and the connection is still properly encrypted — the
+# page counts as a secure context, so COOKIE_SECURE=true keeps working and the
+# session cookie never crosses the network in the clear.
+#
+# Pair this with PORT=4001 and HOST=127.0.0.1 in /etc/telethongram/env, so the
+# bridge stays on loopback and only Caddy listens publicly.
+
+https://YOUR.IP.HERE:4000 {
+	tls internal
+
+	encode zstd gzip
+	header -Server
+
+	reverse_proxy 127.0.0.1:4001 {
+		header_up X-Forwarded-For {remote_host}
+	}
+}

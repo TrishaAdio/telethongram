@@ -130,6 +130,12 @@ class Config:
             out.append(
                 f"No Telegram session at {self.session_path} (run: python -m backend.cli login)."
             )
+        if not self.cookie_secure and self.host not in ("127.0.0.1", "::1", "localhost"):
+            out.append(
+                "COOKIE_SECURE=false while listening on a public interface: the login cookie "
+                "and every message will cross the network unencrypted. Put TLS in front, or "
+                "tunnel over SSH and keep HOST=127.0.0.1."
+            )
         if any("example.com" in o for o in self.allowed_origins):
             out.append(
                 "ALLOWED_ORIGINS still points at example.com — every request from your real "
